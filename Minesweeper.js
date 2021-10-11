@@ -10,13 +10,13 @@ var tiles = document.getElementsByClassName("tile"); //game tiles
 var tileValues;
 var gi = {
     "b": {
-        "x": 10,
-        "y": 10,
+        "x": 8,
+        "y": 8,
         "m": 10
     },
     "i": {
-        "x": 16,
-        "y": 16,
+        "x": 13,
+        "y": 15,
         "m": 40
     },
     "e": {
@@ -54,7 +54,6 @@ function menuSelected(e) {
         gm = "i";
     else if (e.target.id == "expert")
         gm = "e";
-    alert(e.target.id);
     initGame();
 }
 
@@ -75,10 +74,10 @@ function createBoard(x, y) {
             td.style.border = '1px solid black';
             td.style.backgroundColor = "";
             td.setAttribute('class', "tile");
-            tiles[i * x + j].addEventListener("touchstart", function(e) {
+            tiles[i * x + j].addEventListener("mouseover", function(e) {
                 e.target.style.backgroundColor = "blue";
             });
-            tiles[i * x + j].addEventListener("touchend", function(e) {
+            tiles[i * x + j].addEventListener("mouseout", function(e) {
                 e.target.style.backgroundColor = "";
             });
             tiles[i * x + j].addEventListener("click", tileClick);
@@ -102,15 +101,56 @@ function startGame(x, y) {
 }
 
 function distributeMines() {
+    var tileCount = gi[gm].x * gi[gm].y; //number of tiles on the board
     var mCount = gi[gm].m; //mines left to distribute
-    var chance;
+    var chance = gi[gm].m / tileCount; //chance to be a mine
+    tileValues = []; //array containing the values of all cells
+    var randIndexes = []; //random indexes
+
+    //initialize and populate arrays
+    for (var i = 0; i < tileCount; ++i) {
+        tileValues.push("empty");
+        randIndexes.push(i);
+    }
+    randIndexes = shuffle(randIndexes); //shuffle the random numbers
+
+    //sprinkle mines
     do {
-        for (var i = 0; i < gi[gm].y; ++i) {
-            for (var j = 0; j < gi[gm].x; ++j) {}
+        for (var i = 0; i < tileCount && mCount > 0; ++i) {
+            if (tileValues[randIndexes[i]] == "empty") {
+                if (Math.random() < chance) {
+                    tileValues[randIndexes[i]] = "*";
+                    --mCount;
+                } else {
+                    tileValues[randIndexes[i]] = "empty";
+                }
+            }
         }
-    } while (mCount != 0);
+    } while (mCount > 0);
 }
 
 function assignNumbers() {
+    neighbors = [];
+    //TODO:
+}
 
+//utils
+function shuffle(array) {
+    let currentIndex = array.length,
+        randomIndex;
+
+    // While there remain elements to shuffle...
+    while (currentIndex != 0) {
+
+        // Pick a remaining element...
+        randomIndex = Math.floor(Math.random() * currentIndex);
+        currentIndex--;
+
+        // And swap it with the current element.
+        [array[currentIndex], array[randomIndex]] = [
+            array[randomIndex], array[currentIndex]
+        ];
+    }
+
+    return array;
 }
