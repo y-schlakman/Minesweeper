@@ -1,7 +1,8 @@
 //#region Global variables
 var board = document.getElementById("board"); //the table containing all game tiles
 var tiles = document.getElementsByClassName("tile"); //game tiles in DOM
-var tileSizePX = "5vw";
+var tileSizePX = "2.5vw";
+boxFontSize = "1.5vw";
 var tileValues = []; //game tile's values - in the matching order;
 var gi = {
     "b": {
@@ -15,11 +16,19 @@ var gi = {
         "m": 40
     },
     "e": {
-        "x": 16,
-        "y": 30,
+        "x": 30,
+        "y": 16,
         "m": 99
     }
 }; //game info
+alert(document.body.clientWidth + ", " + document.body.clientHeight);
+if (document.body.clientWidth / document.body.clientHeight < 1) {
+    var tmp = gi.e.x;
+    gi.e.x = gi.e.y;
+    gi.e.y = tmp;
+    tileSizePX = "3vh";
+    boxFontSize = "2.5vh";
+}
 var gm; //game mode
 //#endregion
 //#region DOM event functions
@@ -68,7 +77,9 @@ function createBoard(x, y) {
             var td = tr.insertCell();
             td.style.height = tileSizePX; //"100px"; //tHeightPcnt + "%";
             td.style.width = tileSizePX; //"100px"; //tWidthPcnt + "%";
-            td.style.border = '1px solid black';
+            td.style.margin = "0";
+            td.style.padding = "0";
+            td.style.outline = '1px solid black';
             td.style.backgroundColor = "";
             td.setAttribute('class', "tile");
             tiles[i * x + j].addEventListener("mouseover", function(e) {
@@ -87,8 +98,10 @@ function updateBoard() {
     for (var i = 0; i < tileValues.length; ++i) {
         if (tileValues[i] == "mine")
             tiles[i].innerHTML = "<img style=\"margin:0; padding:0; height: 100%; width:100%;\" src=\"./flag.png\"/>"
+        else if (tileValues[i] != 0)
+            tiles[i].innerHTML = "<center><h3 style=\"margin: 0; padding: 0; font-size: " + boxFontSize + ";\">" + tileValues[i] + "</h3></center>";
         else
-            tiles[i].innerHTML = "<center><h1 style=\"margin: 0; padding: 0;\">" + tileValues[i] + "</h1></center>";
+            tiles[i].innerHTML = "";
     }
 }
 //#endregion
