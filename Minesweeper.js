@@ -21,8 +21,8 @@ var gi = {
         "m": 99
     }
 }; //game info
-alert(document.body.clientWidth + ", " + document.body.clientHeight);
-if (document.body.clientWidth / document.body.clientHeight < 1) {
+alert(window.innerWidth + ", " + window.innerHeight);
+if (window.innerWidth / window.innerHeight < 1) {
     var tmp = gi.e.x;
     gi.e.x = gi.e.y;
     gi.e.y = tmp;
