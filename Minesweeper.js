@@ -1,6 +1,7 @@
 //#region Global variables
 var board = document.getElementById("board"); //the table containing all game tiles
 var tiles = document.getElementsByClassName("tile"); //game tiles in DOM
+var tileSizePX = "5vw";
 var tileValues = []; //game tile's values - in the matching order;
 var gi = {
     "b": {
@@ -65,8 +66,8 @@ function createBoard(x, y) {
         var tr = board.insertRow();
         for (var j = 0; j < x; j++) {
             var td = tr.insertCell();
-            td.style.height = tHeightPcnt + "%";
-            td.style.width = tWidthPcnt + "%";
+            td.style.height = tileSizePX; //"100px"; //tHeightPcnt + "%";
+            td.style.width = tileSizePX; //"100px"; //tWidthPcnt + "%";
             td.style.border = '1px solid black';
             td.style.backgroundColor = "";
             td.setAttribute('class', "tile");
@@ -80,6 +81,15 @@ function createBoard(x, y) {
         }
     }
     board.style.display = "table";
+}
+
+function updateBoard() {
+    for (var i = 0; i < tileValues.length; ++i) {
+        if (tileValues[i] == "mine")
+            tiles[i].innerHTML = "<img style=\"margin:0; padding:0; height: 100%; width:100%;\" src=\"./flag.png\"/>"
+        else
+            tiles[i].innerHTML = "<center><h1 style=\"margin: 0; padding: 0;\">" + tileValues[i] + "</h1></center>";
+    }
 }
 //#endregion
 //#region Pregame functions
@@ -98,19 +108,21 @@ function tileClickPreGame(e) {
 //#endregion
 //#region Game startup functions
 function startGame(x, y) {
-    distributeMines();
+    distributeMines(x, y);
     assignNumbers();
+    updateBoard();
 }
 
-function distributeMines() {
+function distributeMines(x, y) {
     var tileCount = gi[gm].x * gi[gm].y; //number of tiles on the board
     tileValues = []; //array containing the values of all cells
     var randIndeces = []; //random indexes
 
     //initialize and populate arrays
     for (var i = 0; i < tileCount; ++i) {
-        tileValues.push("empty");
-        randIndeces.push(i);
+        tileValues.push(0);
+        if (i != y * gi[gm].x + x)
+            randIndeces.push(i);
     }
     randIndeces = shuffle(randIndeces); //shuffle the random numbers
 
@@ -121,8 +133,49 @@ function distributeMines() {
 }
 
 function assignNumbers() {
-    neighbors = [];
-    //TODO:
+    for (var i = 0; i < tileValues.length; ++i) {
+        if (tileValues[i] == "mine")
+            continue;
+        else
+            tileValues[i] = getTileMineCount(i);
+    }
+}
+
+function getTileMineCount(index) {
+    count = 0;
+    var neighborIneces = getTileNeighbors(index);
+    for (var i = 0; i < neighborIneces.length; ++i)
+        if (tileValues[neighborIneces[i]] == "mine")
+            ++count;
+    return count;
+}
+
+function getTileNeighbors(index) {
+    var tl = index - gi[gm].x - 1,
+        tm = tl + 1,
+        tr = tl + 2,
+        ml = index - 1,
+        mr = index + 1,
+        bl = index + gi[gm].x - 1,
+        bm = bl + 1,
+        br = bl + 2;
+    var neighborIndeces = [tl, tm, tr, ml, mr, bl, bm, br];
+
+    if (index < gi[gm].x) //tile in top row
+    {
+        neighborIndeces = neighborIndeces.filter(function(neighbor) { return neighbor != tl && neighbor != tm && neighbor != tr; });
+    } else if (index + 1 > gi[gm].x * (gi[gm].y - 1)) //tile in bottom row
+    {
+        neighborIndeces = neighborIndeces.filter(function(neighbor) { return neighbor != bl && neighbor != bm && neighbor != br; });
+    }
+    if ((index + 1) % gi[gm].x == 0) //tile in the right column
+    {
+        neighborIndeces = neighborIndeces.filter(function(neighbor) { return neighbor != tr && neighbor != mr && neighbor != br; });
+    } else if (index % gi[gm].x == 0) //tile in the left column
+    {
+        neighborIndeces = neighborIndeces.filter(function(neighbor) { return neighbor != tl && neighbor != ml && neighbor != bl; });
+    }
+    return neighborIndeces;
 }
 //#endregion
 //#region Utillities
