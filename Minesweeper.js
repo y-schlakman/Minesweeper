@@ -1,9 +1,14 @@
 //#region Global variables
+var mineImg = "<img class=\"cellImage\" src=\"./mine.png\"/>";
+var flagImg = "<img class=\"cellImage\" src=\"./flag.png\"/>";
+var numberImg = "<img class=\"cellImage\" src=\"./numberImages/Minesweeper_%NUMBER%.svg.png\"/>"
 var board = document.getElementById("board"); //the table containing all game tiles
 var tiles = document.getElementsByClassName("tile"); //game tiles in DOM
 var tileSizePX = "2.5vw";
 boxFontSize = "1.5vw";
 var tileValues = []; //game tile's values - in the matching order;
+var flagIndeces = []; //the indeces that contain a flag
+var uncoveredIndeces = [];
 var gi = {
     "b": {
         "x": 8,
@@ -21,7 +26,6 @@ var gi = {
         "m": 99
     }
 }; //game info
-alert(window.innerWidth + ", " + window.innerHeight);
 if (window.innerWidth / window.innerHeight < 1) {
     var tmp = gi.e.x;
     gi.e.x = gi.e.y;
@@ -30,6 +34,7 @@ if (window.innerWidth / window.innerHeight < 1) {
     boxFontSize = "2.5vh";
 }
 var gm; //game mode
+var cm; //tile selection mode.
 //#endregion
 //#region DOM event functions
 document.body.onload = function() {
@@ -67,6 +72,35 @@ function menuSelected(e) {
     initGame();
 }
 //#endregion
+//#region Controls
+function showControls() {
+    var ctrls = document.getElementById("controls"); //the game menu
+    var ctrlButtons = document.getElementsByClassName("cb"); //the buttons in the menu
+
+    ctrls.style.display = "block";
+    for (var i = 0; i < ctrlButtons.length; ++i) {
+        ctrlButtons[i].addEventListener("click", controlSelected);
+    }
+}
+
+function hideControls() {
+    var ctrls = document.getElementById("controls"); //the game menu
+    var ctrlButtons = document.getElementsByClassName("cb"); //the buttons in the menu
+
+    ctrls.style.display = "none";
+    for (var i = 0; i < ctrlButtons.length; ++i) {
+        ctrlButtons[i].removeEventListener("click", controlSelected);
+    }
+}
+
+function controlSelected(e) {
+    if (e.target.id == "mineModeBtn")
+        cm = "mine";
+    else if (e.target.id == "flagModeBtn")
+        cm = "flag";
+    alert(cm);
+}
+//#endregion
 //#region Board
 function createBoard(x, y) {
     tHeightPcnt = y / 100;
@@ -82,48 +116,85 @@ function createBoard(x, y) {
             td.style.outline = '1px solid black';
             td.style.backgroundColor = "";
             td.setAttribute('class', "tile");
-            tiles[i * x + j].addEventListener("mouseover", function(e) {
+            /*tiles[i * x + j].addEventListener("mouseover", function(e) {
                 e.target.style.backgroundColor = "blue";
             });
             tiles[i * x + j].addEventListener("mouseout", function(e) {
                 e.target.style.backgroundColor = "";
-            });
+            });*/
             tiles[i * x + j].addEventListener("click", tileClickPreGame);
         }
     }
     board.style.display = "table";
 }
 
-function updateBoard() {
-    for (var i = 0; i < tileValues.length; ++i) {
-        if (tileValues[i] == "mine")
-            tiles[i].innerHTML = "<img style=\"margin:0; padding:0; height: 100%; width:100%;\" src=\"./flag.png\"/>"
-        else if (tileValues[i] != 0)
-            tiles[i].innerHTML = "<center><h3 style=\"margin: 0; padding: 0; font-size: " + boxFontSize + ";\">" + tileValues[i] + "</h3></center>";
-        else
-            tiles[i].innerHTML = "";
+function revealWholeBoard() {
+    indeces = new Array(gi[gm].x * gi[gm].y);
+    for (var i = 0; i < indeces.length; ++i) {
+        indeces[i] = i;
     }
+    updateBoard(indeces);
+}
+
+function updateBoard(indeces = "DEBUG") {
+    if (indeces == "DEBUG") {
+        indeces = new Array(gi[gm].x * gi[gm].y);
+        for (var i = 0; i < indeces.length; ++i) {
+            indeces[i] = i;
+        }
+    }
+    for (var i = 0; i < indeces.length; ++i) {
+        if (tileValues[indeces[i]] == "mine") {
+            tiles[indeces[i]].innerHTML = mineImg;
+            tiles[indeces[i]].style.backgroundColor = "#b9b9b9";
+        } else if (tileValues[indeces[i]] != 0) {
+            tiles[indeces[i]].innerHTML = numberImg.replace("%NUMBER%", tileValues[indeces[i]]);
+            tiles[indeces[i]].style.backgroundColor = "#b9b9b9";
+            //tiles[indeces[i]].innerHTML = "<center><h3 style=\"margin: 0; padding: 0; font-size: " + boxFontSize + ";\">" + tileValues[indeces[i]] + "</h3></center>";
+        } else {
+            tiles[indeces[i]].innerHTML = "";
+            tiles[indeces[i]].style.backgroundColor = "grey";
+        }
+        if (uncoveredIndeces.indexOf(indeces[i]) == -1) {
+            uncoveredIndeces.push();
+        }
+        if (uncoveredIndeces.length == gi[gm].x * gi[gm].y)
+            gameWon();
+    }
+}
+
+function updateTileFlag(index, updateType) {
+    if (updateType == "unFlag")
+        tiles[index].innerHTML = "";
+    else if (updateType == "flag")
+        tiles[index].innerHTML = flagImg;
 }
 //#endregion
 //#region Pregame functions
 function initGame() {
     hideMenu();
+    showControls();
     createBoard(gi[gm].x, gi[gm].y);
 }
 
 function tileClickPreGame(e) {
-    var i = 0;
-    for (; i < tiles.length; ++i)
-        if (tiles[i] == e.target)
-            break;
-    startGame(i % gi[gm].x, Math.floor(i / gi[gm].x));
+    for (var i = 0; i < tiles.length; ++i)
+        if (tiles[i] == e.target) {
+            startGame(i % gi[gm].x, Math.floor(i / gi[gm].x));
+            return;
+        }
 }
 //#endregion
 //#region Game startup functions
 function startGame(x, y) {
     distributeMines(x, y);
     assignNumbers();
-    updateBoard();
+    //updateBoard("DEBUG");
+    for (var i = 0; i < tiles.length; ++i) {
+        tiles[i].removeEventListener("click", tileClickPreGame);
+        tiles[i].addEventListener("click", tileClickInGame);
+    }
+    tiles[y * gi[gm].x + x].click();
 }
 
 function distributeMines(x, y) {
@@ -163,7 +234,7 @@ function getTileMineCount(index) {
     return count;
 }
 
-function getTileNeighbors(index) {
+function getTileNeighbors(index, noDiagonals = false) {
     var tl = index - gi[gm].x - 1,
         tm = tl + 1,
         tr = tl + 2,
@@ -172,7 +243,10 @@ function getTileNeighbors(index) {
         bl = index + gi[gm].x - 1,
         bm = bl + 1,
         br = bl + 2;
-    var neighborIndeces = [tl, tm, tr, ml, mr, bl, bm, br];
+    if (noDiagonals)
+        var neighborIndeces = [tm, ml, mr, bm];
+    else
+        var neighborIndeces = [tl, tm, tr, ml, mr, bl, bm, br];
 
     if (index < gi[gm].x) //tile in top row
     {
@@ -191,6 +265,52 @@ function getTileNeighbors(index) {
     return neighborIndeces;
 }
 //#endregion
+//#region In game functions
+function tileClickInGame(e) {
+    for (var i = 0; i < tiles.length; ++i)
+        if (tiles[i] == e.target) {
+            var toUpdate, updateType;
+            if (cm == "flag") {
+                if (flagIndeces.indexOf(i) == -1) {
+                    flagIndeces.push(i);
+                    updateType = "flag";
+                } else {
+                    flagIndeces = flagIndeces.filter(function(flagIndex) { return flagIndex != i; });
+                    updateType = "unFlag";
+                }
+                updateTileFlag(i, updateType);
+            } else {
+                if (tileValues[i] == "mine" && flagIndeces.indexOf(i) == -1) {
+                    GameOver(i);
+                } else {
+                    toUpdate = tileClickInGameRecursive(i);
+                    updateBoard(toUpdate);
+                }
+            }
+        }
+}
+
+function tileClickInGameRecursive(index, clicked = []) {
+    var neighborIndeces = getTileNeighbors(index).filter(
+        function(neighborIndex) {
+            return clicked.indexOf(neighborIndex) == -1;
+        }
+    );
+    if (tileValues[index] == "mine") {
+        return clicked;
+    } else if (tileValues[index] > 0) {
+        //alert(tileValues[index]);
+        clicked.push(index);
+        return clicked;
+    } else {
+        clicked.push(index);
+    }
+    for (var i = 0; i < neighborIndeces.length; ++i) {
+        clicked = tileClickInGameRecursive(neighborIndeces[i], clicked);
+    }
+    return clicked;
+}
+//#endregion
 //#region Utillities
 function shuffle(array) {
     let currentIndex = array.length,
@@ -206,6 +326,21 @@ function shuffle(array) {
         ];
     }
     return array;
+}
+//#endregion
+//#region End game
+function GameOver(i) {
+    revealWholeBoard();
+    tiles[i].style.backgroundColor = "red";
+    setTimeout(function() {
+        alert("Game Over!!!");
+        location.reload();
+    }, 1500);
+}
+
+function gameWon() {
+    alert("win!!!");
+    location.reload();
 }
 //#endregion
 //#region Debug

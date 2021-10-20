@@ -11,6 +11,10 @@ body {
     display: none;
 }
 
+#controls {
+    display: none;
+}
+
 #board {
     position: absolute;
     top: 0%;
@@ -21,6 +25,14 @@ body {
     display: none;
 }
 
-.tile:focus {
+.tile::focus {
     background-color: lightblue;
+}
+
+.cellImage {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    pointer-events: none;
 }
